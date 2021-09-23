@@ -1,0 +1,99 @@
+"""
+Implementation of "Fully Convolutional Networks for Continuous Sign Language Recognition"
+"""
+
+import torch
+import torch.nn as nn
+# from .local_attn import Encoder, mask_local_mask, LayerNorm
+from .temporal_local_attention import TransformerEncoder
+from .backbone_conv_attn import Backbone
+
+
+class MainStream(nn.Module):
+    def __init__(self, vocab_size, opts, momentum=0.1):
+        super(MainStream, self).__init__()
+
+        # backbone
+        self.backbone = Backbone(opts)
+
+        self.conv1 = nn.Conv1d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm1d(512)
+        self.elu = nn.ELU()
+        self.pool1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.enc1 = nn.Sequential(self.conv1, self.bn1, self.elu, self.pool1)
+
+        # self-attention
+        self.selfattn = TransformerEncoder(opts)
+
+        self.conv2 = nn.Conv1d(in_channels=512, out_channels=1024, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm1d(1024)
+        self.pool2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.enc2 = nn.Sequential(self.conv2, self.bn2, self.elu, self.pool2)
+
+        self.fc = nn.Linear(1024, vocab_size)
+
+        self.init()
+
+    def init(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, (nn.Linear)):
+                # Slightly different from the TF version which uses truncated_normal for initialization
+                # cf https://github.com/pytorch/pytorch/pull/5617
+                m.weight.data.normal_(mean=0.0, std=0.02)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                m.bias.data.zero_()
+
+
+    def forward(self, video, len_video=None):
+        """
+        x: [batch, num_f, 3, h, w]
+        """
+        # print("input: ", video.size())
+        bs, num_f, c, h, w = video.size()
+
+        x = video.reshape(-1, c, h, w)
+
+        x = self.backbone(x)
+        # print("backbone: ", x.shape)
+
+        x = x.reshape(bs, -1, 512)     # [bs, t ,512]
+        x = x.permute(0, 2, 1)  # [bs, 512, t]
+
+        x = self.enc1(x)       # [bs, 512, t/2]
+        # enc
+        x = x.permute(0, 2, 1)  # [bs, t/2, 512]
+        padding_mask = self._get_mask(len_video/2).to(x.device)
+        # print("x: ", x.shape)
+        # print("pad_mask: ", padding_mask.shape)
+        # print("len_video: ", len_video/2)
+        x = self.selfattn(x, mask=padding_mask, src_length=len_video/2)        # [bs, t/2, 512]
+        # print("attn x: ", x.shape)
+
+        x = x.permute(0, 2, 1)  # [bs, 512, t/2]
+        x = self.enc2(x)       # [bs, 1024, t/4]
+        
+        x = x.permute(0, 2, 1)  # [bs, t/2, 512]
+        logits = self.fc(x)  # [batch, t/4, vocab_size]
+        return logits
+
+    def _get_mask(self, x_len):
+        pos = torch.arange(0, max(x_len)).unsqueeze(0).repeat(x_len.size(0), 1).to(x_len.device)
+        pos[pos >= x_len.unsqueeze(1)] = max(x_len) + 1
+        mask = pos.ne(max(x_len) + 1)
+        return mask.unsqueeze(1)
+
+
+
+if __name__ == "__main__":
+    from config.options import parse_args
+    opts = parse_args()
+    x = torch.randn(2, 30, 3, 112, 112).cuda()
+    len_x = torch.LongTensor([30, 20])
+    model = MainStream(1233, opts).cuda()
+    out = model(x, len_x)
+    print("out: ", out.shape)

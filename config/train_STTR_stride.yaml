@@ -1,0 +1,70 @@
+Experiment_name: ST-TR_stride_st_res
+
+# feeder
+feeder: feeders.feeder.Feeder
+num_workers: 28
+train_feeder_args:
+  data_path: /data1/dataset/ntu/xsub/train_data_joint.npy
+  label_path: /data1/dataset/ntu/xsub/train_label.pkl
+  # debug: True
+  random_choose: False
+  random_shift: True
+  random_move: True
+  window_size: -1
+  normalization: True
+
+test_feeder_args:
+  data_path: /data1/dataset/ntu/xsub/val_data_joint.npy
+  label_path: /data1/dataset/ntu/xsub/val_label.pkl
+  # debug: True
+  random_choose: False
+  random_shift: False
+  random_move: False
+  window_size: -1
+  normalization: True
+
+# model_config_method: 1
+
+# model
+model: ST_TR.TR_model_st_res.Model
+model_args:
+  num_heads: 8
+  hidden_size: 128
+  ff_size: 256
+  num_layers: 1
+  dropout: 0.3
+  emb_dropout: 0.3
+  s_local_num_layers: 0
+  t_local_num_layers: 1
+  drop_path_rate: 0.1
+  window_size: 25
+  max_relative_positions: 300
+
+  input_channel: 3
+  block_num: 3
+  stride_layer: [2, 2, 2]
+
+  point_num: 25
+  class_num: 60
+
+  end_t_num_layer: 4
+  
+
+
+# weights: work_dir/ST-TR_stride_small2021-06-17/save_models/ST-TR_stride_small-3.pt
+
+#optim
+optim: Adam
+weight_decay: 0.0001
+lr: 0.001
+step: [50, 80, 100]
+
+# training
+phase: train
+# debug: False
+device: [0, 1]
+only_train_epoch: 0
+warm_up_epoch: 4
+batch_size: 12
+epochs: 140
+nesterov: True

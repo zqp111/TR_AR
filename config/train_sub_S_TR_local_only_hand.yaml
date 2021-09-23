@@ -1,0 +1,61 @@
+Experiment_name: TCLS_SCLS_finetune_hand
+
+# feeder
+feeder: feeders.feeder.Feeder
+num_workers: 8
+train_feeder_args:
+  data_path: ./data/ntu/xsub/train_data_joint_finetune.npy
+  label_path: ./data/ntu/xsub/train_label_finetune.pkl
+  # debug: True
+  random_choose: False
+  random_shift: True
+  random_move: True
+  window_size: -1
+  normalization: True
+
+test_feeder_args:
+  data_path: ./data/ntu/xsub/val_data_joint_finetune.npy
+  label_path: ./data/ntu/xsub/val_label_finetune.pkl
+  # debug: True
+  random_choose: False
+  random_shift: False
+  random_move: False
+  window_size: -1
+  normalization: True
+
+# model
+model: model.TR_GCN_model_local_one_more_S_finetune.Model
+model_args:
+  graph: graph.ntu_rgb_d_new.Graph
+  kernel_num: 8
+  edge_weight: True
+  lamda: 1
+  input_channel: 3
+  mid_channels: [64, 64]
+  layer_num: 3
+  heads: 8 
+  encode_size: 64 
+  d_ff: 128
+  dropout: 0.3 
+  position_encoding_dropout: 0.3
+  point_num: 25 
+  n_classes: 4
+
+weights: work_dir/TCLS_SCLS_finetune2021-03-30/save_models/TCLS_SCLS_finetune-36.pt
+ignore_weights: ['new_mlp_head.0.weight', 'new_mlp_head.0.bias', 'new_mlp_head.1.weight', 'new_mlp_head.1.bias']
+
+#optim
+optim: Adam
+weight_decay: 0.0001
+lr: 0.0001
+step: [30, 80, 100]
+
+# training
+phase: train
+debug: False
+device: [0]
+only_train_epoch: 1
+warm_up_epoch: 10
+batch_size: 16
+epochs: 300
+nesterov: True

@@ -1,0 +1,7 @@
+.vscode/
+work_dir/
+.idea/
+*.pyc
+**/__pycache__/
+tensorboard/
+data/
