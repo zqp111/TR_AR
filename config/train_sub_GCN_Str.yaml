@@ -1,10 +1,11 @@
-Experiment_name: MuiltKernelGTCN_Str_similar_adam
+Experiment_name: MuiltKernelGTCN_Str_condrop
 ## dropout and weight_decay
 
 # feeder
 feeder: feeders.feeder.Feeder
 num_workers: 8
 train_feeder_args:
+# test_feeder_args:
   data_path: /data1/dataset/ntu_short_split/xsub/train_data_joint.npy
   label_path: /data1/dataset/ntu_short_split/xsub/train_label.pkl
   # debug: True
@@ -13,7 +14,9 @@ train_feeder_args:
   random_move: True
   window_size: -1
   normalization: True
+  use_gauss: False
 
+# train_feeder_args:
 test_feeder_args:
   data_path: /data1/dataset/ntu_short_split/xsub/val_data_joint.npy
   label_path: /data1/dataset/ntu_short_split/xsub/val_label.pkl
@@ -35,12 +38,12 @@ model_args:
   in_channels: 3
   n_class: 60
 
-# weights: work_dir/MuiltKernelGTCN_Str_con_52021-09-14/save_models/MuiltKernelGTCN_Str_con_5-125.pt
+# weights: work_dir/MuiltKernelGTCN_Str_similar_adam_bigger_lr_con2021-09-28/save_models/MuiltKernelGTCN_Str_similar_adam_bigger_lr_con-139.pt
 
 #optim
-optim: Adam
-weight_decay: 0.00001
-lr: 0.001
+optim: SGD
+weight_decay: 0.0001
+lr: 0.05
 step: [35, 80, 100]
 
 # training
@@ -48,7 +51,9 @@ phase: train
 debug: False
 device: [0, 1, 2, 3]
 only_train_epoch: 1
-warm_up_epoch: 5
-batch_size: 192
+warm_up_epoch: 0
+batch_size: 256
 epochs: 140
 nesterov: True
+
+log_interval: 10

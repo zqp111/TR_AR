@@ -116,7 +116,7 @@ class MuiltKernelGTCN_(nn.Module):
 
                 drop_path_rate=0., 
                 num_layers=3,
-                num_heads=8, 
+                num_heads=4, 
                 window_size=15, 
                 emb_dropout=0.3,
                 local_num_layers=2, 
