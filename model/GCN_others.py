@@ -93,10 +93,10 @@ class unit_gcn(nn.Module):
 
         n, kc, t, v = x.size()
         x = x.view(n, self.num_subset, kc//self.num_subset, t, v)
-        # x1 = torch.einsum('nkctw, kwv->nctv', (x, self.fixed_A*self.edge_weight))  # 不可训练核
+        x1 = torch.einsum('nkctw, kwv->nctv', (x, self.fixed_A*self.edge_weight))  # 不可训练核
         x2 = torch.einsum('nkctv,kcvw->nctw', (x, norm_learn_A))
-        # x = x1 + 0.5*x2
-        x = x2
+        x = x1 + 0.5*x2
+        # x = x2
 
         x = self.bn(x)
         x += self.down(x0)

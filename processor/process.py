@@ -175,12 +175,12 @@ class Process(IO):
                 result, acc = self.test()
                 self.logger.eval_log('Done.\n')
                 # save the output of model
-                result_dict = dict(
-                        zip(self.data_loader['test'].dataset.sample_name, result))
-                self.save_results(result_dict, 'result_{}_{}.pkl'.format(epoch, acc))
-                # save best results
-                if acc > self.best_score:
-                    self.save_results(result_dict, 'result_best_{}.pkl'.format(acc))
+                # result_dict = dict(
+                #         zip(self.data_loader['test'].dataset.sample_name, result))
+                # self.save_results(result_dict, 'result_{}_{}.pkl'.format(epoch, acc))
+                # # save best results
+                # if acc > self.best_score:
+                #     self.save_results(result_dict, 'result_best_{}.pkl'.format(acc))
 
 
 

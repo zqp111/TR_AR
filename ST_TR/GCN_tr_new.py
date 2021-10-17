@@ -3,9 +3,9 @@ import numpy as np
 import torch.nn as nn
 import math
 
-from ST_TR.att_modules.temporal_local_attention import TransformerEncoder
+# from ST_TR.att_modules.temporal_local_attention import TransformerEncoder
 
-from ST_TR.graph_attention import MultiHeadedGraphAttention
+from modules.graph_attention import MultiHeadedGraphAttention
 
 def conv_branch_init(conv):
     weight = conv.weight
@@ -105,7 +105,7 @@ class unit_gcn(nn.Module):
         return x
 
 
-class MuiltKernelGTCN_(nn.Module):
+class MuiltKernelGTCN_tr(nn.Module):
     def __init__(self, in_channels,
                  out_channels,
                  A, residual,

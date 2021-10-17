@@ -13,6 +13,8 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 from einops import rearrange, repeat
+import numpy as np
+import time
 
 def compute_distances_torch_batch(X, Y):
     """
@@ -62,8 +64,6 @@ def compute_distances_torch_batch_head(X, Y):
     dis = -HX-HY+2*G
     return dis
 
-
-
 def relative_attn_inner(x, y, pos_embed):
     """
     x: [batch_size, heads, length, head_dim]
@@ -85,6 +85,7 @@ def relative_attn_inner(x, y, pos_embed):
 
 
     return xy + x_tz_r
+
 
 
 
@@ -173,6 +174,14 @@ class MultiHeadedGraphAttention(nn.Module):
             scores = scores.masked_fill(~mask.unsqueeze(1), float("-inf"))
 
         # apply attention dropout and compute context vectors.
+        # scores = torch.softmax(scores, dim=-2)
+
+        # start = time.time()
+
+        # scores = dropconnection(scores, dropout=0.2, train=self.training)
+        # scores = addconnection(scores, addratio=0.4, train=self.training)
+        # print("time: ", time.time() - start)
+
         attention = self.softmax(scores)
         attention = self.dropout(attention)  # [bs, head, length, length]
 
@@ -194,9 +203,57 @@ class MultiHeadedGraphAttention(nn.Module):
 
         return output
 
+def dropconnection(score, dropout=0.1, train=False):
+    """drop some connection in the attention map
+
+    Args:
+        score (tensor): bs, head, length, length
+    """
+
+    if train:
+        # start_time = time.time()
+        mask = torch.rand(score.shape[-3:]).to(score.device) > dropout
+        mask = mask.unsqueeze(0).repeat(bs, 1, 1, 1)
+        # time_1 = time.time()
+        # print("1 time: ", time_1 - start_time)
+
+        # time_2 = time.time()
+        # print("2 time: ", time_2 - time_1)
+        out = score * mask
+        return out
+    else: 
+        return score
+
+def addconnection(score, addratio=0.1, train=False):
+
+    # print(score.shape)
+    bs = score.shape[0]
+    
+    if train:
+        # start_time = time.time()
+        mask = torch.rand(score.shape[-3:]).to(score.device) <= addratio
+        # time_1 = time.time()
+        mask = mask.unsqueeze(0).repeat(bs, 1, 1, 1)
+        # print("1 time: ", time_1 - start_time)
+        # mask = torch.tensor(mask, dtype=torch.int8).to(score.device)
+        # time_2 = time.time()
+        # print("2 time: ", time_2 - time_1)
+        out = (score + mask)
+        # time_3 = time.time()
+        # print("3 time: ", time_3 - time_1)
+        return out
+    else: 
+        return score
+
+
 
 if __name__ == "__main__":
-    m =  MultiHeadedGraphAttention(3*75, 8, 256)
-    x = torch.randn((16, 300, 3*75))
-    y = m(x, x, x)
-    print(y.shape)
+    # m =  MultiHeadedGraphAttention(3*75, 8, 256)
+    # x = torch.randn((16, 300, 3*75))
+    # y = m(x, x, x)
+    # print(y.shape)  
+    # time_begin = time.time()
+    # mask = torch.rand( 8, 25, 25) <= 0.1
+    # mask = mask.unsqueeze(0).repeat(6144, 1, 1, 1)
+    # print('time: ', time.time() - time_begin)
+    pass
